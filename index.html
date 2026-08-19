@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Bomb Game - Baldi Style</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Courier New', Courier, monospace; }
+        
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 32px;
+            height: 32px;
+            background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAlUlEQVR4AeyTQQ6AMAgE1f//Wa8jCWOa0MiBnrYLxM1Ir+PnMwGGgBK4cbirsF8y66EftQaIzTvuvQOcOGQN+yWzHiPXm4Alr6opgVWk/B+ctbAawAarahNgCCiB1a3m5nPWFlYD2GBVrXeADCl9amKnb7R6E7DkVTUlQKT8IH3qrId+1BogNu+4T4AhMAS2E/h6ug8AAAD//1BNbH4AAAAGSURBVAMA/VWoQc8cDqgAAAAASUVORK5CYII=");
+            background-size: contain;
+            background-repeat: no-repeat;
+            transform: translate(-50%, -50%);
+            image-rendering: pixelated;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="crosshair"></div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        // TEXTURAS BASE64
+        const bombBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA/klEQVR4AeyUgQ7CMAhEnf//z8ojwVy2toNOYzRtwnoFeneyuPvty2sZ+MgEHrbizRp8BG7tbzGACLEXILfZ2uf1fNlAiJjOBoYcrDu4F5cMIBhiCIDJgQkwAe7FJQMtUkxEHkzEubVPG+CX9cipIRY7uBfTBnqEmsfgmYmqAf5SHkaOlmOAhtW2OCuOnO4VA4jpXcWjmvYdcNaAC9g4DwSS8B45p2DGgBMjbuM8I/XesyatZwx4f0Lc+6qPtIEqcbZ/GfiJCbw+Kon3Wul1uuwEMsSZHhfVR9YAd0YCoxp3u1ExAAlCraA2FVUDUyKjS8vAmsCawP9PYPQNoPYEAAD//5u/pm0AAAAGSURBVAMAAyBNQdiWwi4AAAAASUVORK5CYII=";
+        const floorBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC20lEQVR4ATRTXU+SYRi+eBQFFYQAARUwvzJT1NTS2XR9nbXW2mq1Wge1DvsN/YPWSa1W66DWYX+hrWU502Kan+QXiQKBIviBIPjmdW+yvRt7n/u57uvrVY8+9GuPPw5oD9/3abdenJHnwbse7fqzRu3emy7tyafLcn73dYd2+2WbdueVX7vxvFkbeurQ7r89qymdToe9vT04S6yoKXPAU+FEKpWC0WiU96FQSN41O+pQUVGB/f19lJeXw+l04vDwEMpVegLnmjphtVqxuhPDeiYBg8Egj9lshsPhQKKQhlIKjTYvSkpKEI/Hkc1m0dPghxoNBvB1ahSBlWnYbDa5SLCNjQ0Z5HA4HMafRAgrqXU5t9vtIPjnwDBUW1ubUGmvPYVEIoEmuw8+sxuO4koMtPbiSvcg0uk0tre3UW20g1L4P5fLwWKxQGUyGZDml8kREGRsYQJLyTCK7EYkk0kMT/9AXV2dbJ5cnRO2ZWVlIqW0tBRqbW0N5oIB55u7hOIx/d3dXQTjKygUCsKAPnXXt8PtduO0q0FM1u9oULwQSkfE3YODA5FDg6qrq6HX68WXTl8r6BXZ0XmeR6NRcEZRn9fkgsvlEmRqlIvKhHprLegJWRCcyxg5PdA0DQRUVVVVWNxchU6nw/y/ZcxEFnDSUiPUKYFDPLdYLJI9++Hz+UCwoqIiqOLiYnF2NrooG7nB4/GIfpbqUtcFkC6NDgaDsmh8cRI0n8VSsVgMlZWV4jj1cfDbzBgIzAL9Wp4CjaPZbOHW1pZcJgClqSF/P1gQaiRVNs5kMknurHQgEAD1Epxnre5G0NR8Pg/eUUThN8DYjlvH/Dlw8+I1XO0ZwmB7H1qc9fB6vcgYCuJVf0s3GKtiZRkLa8yek1FvY4fENzL3E7/D8/g+Oy7fCZtqO0qHTaXhTFDNxZYQz6eEJllEs5syjKOf39MideWmSCQC1nfi7yxiuaSktKPP4T8AAAD///ZLWG4AAAAGSURBVAMA1aWYtXrI+l8AAAAASUVORK5CYII=";
+        const smokeBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAn0lEQVR4AeyTgQqAMAhEq///59LgxhFDbmMjBGOmOCfnq13Hz08JKAJFQCFw202FWdgWcu5bcjRQBIz2HKpPJ8Bxw04bFWbh3EpHYG7M4JRCAJjdcyt8Cnjek2NFgNxspjCFACB2Hw3p+1+L6t+9FARepbteCgH/+2GsA7nIc303VgR0D65KphPAuJdASEdgydTcpAgUgSKwnQBfuV78AAAA//9g9AaNAAAABklEQVQDAKSBFUGi8gOZAAAAAElFTkSuQmCC";
+        const extraParticleBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAxElEQVR4AeyUQQ6CMBBFB2+g53Pr1nu49QzezyPU/0wXhGDoTElMyZC+NC2Fefy0nOzPVwpkAqEEilmBPfZvSMAeKg3qeltMoFYlBajDUBcTuKkWkAJoGG0xgWi1ledSoC8B9gGsRNs65RIoV51/0frylnUugV8v7BHzCTylAGedftCwt/kEltWQAKRgeb9h3CfQUGBryWACd30PvCezOcyBbnvbWAlML5u+XNTPqfPer2f9WAlgvDeZQCaQCRw/ga3/xgcAAP//91g3PgAAAAZJREFUAwCGNCRBrQFfZQAAAABJRU5ErkJggg==";
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB); 
+        scene.fog = new THREE.Fog(0x87CEEB, 20, 100);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
+        scene.add(ambientLight);
+
+        const loader = new THREE.TextureLoader();
+        const floorTex = loader.load(floorBase64);
+        floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
+        floorTex.repeat.set(500, 500);
+        floorTex.magFilter = floorTex.minFilter = THREE.NearestFilter;
+
+        const floorGeo = new THREE.PlaneGeometry(2000, 2000);
+        const floorMat = new THREE.MeshLambertMaterial({ map: floorTex });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        const controls = new PointerLockControls(camera, document.body);
+        document.body.addEventListener('click', () => { if (controls.isLocked) throwBomb(); else controls.lock(); });
+
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
+        const playerSpeed = 70.0; 
+
+        document.addEventListener('keydown', (e) => {
+            switch (e.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyD': moveRight = true; break;
+                case 'Space': if (camera.position.y <= 1.7) velocity.y += 3.5; break;
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            switch (e.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyD': moveRight = false; break;
+            }
+        });
+
+        const bombs = [];
+        const bombTex = loader.load(bombBase64);
+        bombTex.magFilter = THREE.NearestFilter;
+        const smokeTex = loader.load(smokeBase64);
+        smokeTex.magFilter = THREE.NearestFilter;
+        const extraTex = loader.load(extraParticleBase64);
+        extraTex.magFilter = THREE.NearestFilter;
+
+        function throwBomb() {
+            const bombMat = new THREE.SpriteMaterial({ map: bombTex });
+            const sprite = new THREE.Sprite(bombMat);
+            sprite.scale.set(0.7, 0.7, 1);
+            sprite.position.copy(camera.position);
+            
+            const throwDir = new THREE.Vector3();
+            camera.getWorldDirection(throwDir);
+            
+            bombs.push({
+                mesh: sprite,
+                vel: throwDir.clone().multiplyScalar(0.5),
+                gravity: -0.012
+            });
+            scene.add(sprite);
+        }
+
+        function createExplosion(pos) {
+            const explosionGroup = new THREE.Group();
+            scene.add(explosionGroup);
+
+            const addParticles = (texture, count, scaleBase, spread) => {
+                for(let i=0; i < count; i++) {
+                    const sMat = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 1.0 });
+                    const s = new THREE.Sprite(sMat);
+                    s.position.copy(pos);
+                    s.userData.v = new THREE.Vector3(
+                        (Math.random()-0.5) * spread, 
+                        Math.random() * 0.05 + 0.02, 
+                        (Math.random()-0.5) * spread
+                    );
+                    s.scale.set(scaleBase, scaleBase, 1);
+                    explosionGroup.add(s);
+                }
+            };
+
+            addParticles(smokeTex, 15, 0.5, 0.06);   
+            addParticles(extraTex, 15, 0.4, 0.08);   
+
+            const startTime = performance.now();
+            const duration = 2000;
+
+            const updateParticles = () => {
+                const elapsed = performance.now() - startTime;
+                const progress = elapsed / duration;
+                
+                // Desaparece instantaneamente após 2 segundos
+                if (progress >= 1) { 
+                    scene.remove(explosionGroup); 
+                    return; 
+                }
+
+                explosionGroup.children.forEach(p => {
+                    p.position.add(p.userData.v);
+                    // Opacidade permanece 1.0 (não fade)
+                    p.material.opacity = 1.0; 
+                    const currentScale = p.scale.x + 0.001;
+                    p.scale.set(currentScale, currentScale, 1);
+                });
+                requestAnimationFrame(updateParticles);
+            };
+            updateParticles();
+        }
+
+        let prevTime = performance.now();
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now();
+            const delta = (time - prevTime) / 1000;
+
+            if (controls.isLocked) {
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+                velocity.y -= 9.8 * delta;
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
+                if (moveForward || moveBackward) velocity.z -= direction.z * playerSpeed * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * playerSpeed * delta;
+                controls.moveRight(-velocity.x * delta);
+                controls.moveForward(-velocity.z * delta);
+                camera.position.y += (velocity.y * delta);
+                if (camera.position.y < 1.6) { velocity.y = 0; camera.position.y = 1.6; }
+            }
+
+            for (let i = bombs.length - 1; i >= 0; i--) {
+                const b = bombs[i];
+                b.vel.y += b.gravity;
+                b.mesh.position.add(b.vel);
+                if (b.mesh.position.y <= 0.1) {
+                    createExplosion(b.mesh.position.clone());
+                    scene.remove(b.mesh);
+                    bombs.splice(i, 1);
+                }
+            }
+            renderer.render(scene, camera);
+            prevTime = time;
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        animate();
+    </script>
+</body>
+</html>
